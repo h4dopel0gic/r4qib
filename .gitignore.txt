@@ -1,0 +1,18 @@
+# Reports — never commit findings
+reports/
+
+# Environment variables
+.env
+.env.*
+
+# Node
+node_modules/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# LMStudio / local model artifacts
+*.gguf
+*.bin
