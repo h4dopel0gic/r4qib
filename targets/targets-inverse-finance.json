@@ -1,0 +1,29 @@
+[
+  {
+    "name": "PSMFed v2",
+    "address": "0x67fC2c1e4bA1244D89A0E960aA9B4B3F7FA69Fcc",
+    "chain": "ethereum-mainnet",
+    "programme": "Inverse Finance — Immunefi $100k max critical",
+    "addedToScope": "2025-12-30",
+    "notes": "Peg Stability Module Fed v2. Newest contract. Controls DOLA minting via PSM. High value target.",
+    "attackAngle": "PSM peg mechanics, fee calculation, access control on mint/burn, oracle price bounds"
+  },
+  {
+    "name": "DOLA PSM v2",
+    "address": "0x1d0218A2F9ADa55D3c9Cb7bC67E89D7Ed9290dfa",
+    "chain": "ethereum-mainnet",
+    "programme": "Inverse Finance — Immunefi $100k max critical",
+    "addedToScope": "2025-12-30",
+    "notes": "DOLA Peg Stability Module v2. Newest contract. Direct DOLA/stablecoin swap mechanism.",
+    "attackAngle": "Rounding in swap calculations, slippage, fee extraction, reserve accounting"
+  },
+  {
+    "name": "FiRM CurveDolaLPHelper v2",
+    "address": "0x8084d0b5Ee6Ac4a34C14B5D1Ff9A08eF1aF8F5E0",
+    "chain": "ethereum-mainnet",
+    "programme": "Inverse Finance — Immunefi $100k max critical",
+    "addedToScope": "2025-07-02",
+    "notes": "LP helper for Curve DOLA pools. v2 updated logic. LP price manipulation is their historical weakness.",
+    "attackAngle": "LP token pricing, Curve pool interaction, slippage, reentrancy via Curve callbacks"
+  }
+]
