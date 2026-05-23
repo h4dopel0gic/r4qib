@@ -1,4 +1,8 @@
-# 👁️ R4qib — Autonomous Smart Contract Investigation (ASCI)
+# R4qib — Autonomous Smart Contract Investigation (ASCI)
+
+<p align="center">
+  <img src="assets/r4qib-logo.png" alt="R4qib" width="160"/>
+</p>
 
 > *"He is الرقيب — The Watcher. Nothing escapes His sight."* — Qur'an 4:1
 
