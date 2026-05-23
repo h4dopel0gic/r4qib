@@ -858,7 +858,49 @@
     margin-top: 4px;
   }
 
-  /* ── Scrollbar ─────────────────────────────────────────── */
+  /* ── Offline Banner ────────────────────────────────────── */
+  .offline-banner {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    background: rgba(255,0,110,0.08);
+    border: 1px solid var(--accent);
+    animation: fadein 0.3s forwards;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .offline-banner.visible { display: flex; }
+
+  .offline-msg {
+    font-size: 0.72rem;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+
+  .offline-cmd {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--primary);
+    background: rgba(0,212,255,0.06);
+    border: 1px solid var(--dim);
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+
+  .offline-cmd:hover {
+    border-color: var(--primary);
+    box-shadow: var(--glow-sm);
+  }
+
+  .offline-hint {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
@@ -1045,6 +1087,15 @@
 
   <!-- Palette Swapper — moved to bottom -->
   <!-- Controls Bar — moved to bottom -->
+
+  <!-- Offline Banner -->
+  <div class="offline-banner" id="offline-banner">
+    <span class="offline-msg">⚠ SERVER OFFLINE — Demo mode active</span>
+    <span class="offline-cmd" onclick="copyStartCmd()" title="Click to copy">
+      start-r4qib.bat
+    </span>
+    <span class="offline-hint">Double-click start-r4qib.bat to enable live scanning</span>
+  </div>
 
   <!-- Main Grid -->
   <div class="main-grid">
@@ -1494,7 +1545,151 @@ function setTargetStatus(i, icon) {
   }
 }
 
-// ── State ─────────────────────────────────────────────────────
+// ── WebSocket Client — Real Pipeline Bridge ───────────────────
+
+let ws         = null;
+let wsOnline   = false;
+let wsRetryTimer = null;
+
+function connectWS() {
+  try {
+    ws = new WebSocket('ws://localhost:3001');
+
+    ws.onopen = () => {
+      wsOnline = true;
+      clearTimeout(wsRetryTimer);
+      document.getElementById('status-label').textContent = 'ONLINE';
+      document.querySelector('.status-dot').style.background = '#00ffaa';
+      document.querySelector('.status-dot').style.boxShadow = '0 0 8px #00ffaa';
+      document.getElementById('offline-banner').classList.remove('visible');
+      log('R4qib server connected — ws://localhost:3001', 'success');
+      log('Live pipeline active. Real scan mode enabled.', 'success');
+    };
+
+    ws.onclose = () => {
+      wsOnline = false;
+      document.getElementById('status-label').textContent = 'OFFLINE';
+      document.querySelector('.status-dot').style.background = 'var(--accent)';
+      document.querySelector('.status-dot').style.boxShadow = '0 0 8px var(--accent)';
+      document.getElementById('offline-banner').classList.add('visible');
+      log('Server offline — demo mode active. Run: start-r4qib.bat', 'warn');
+      // Auto-reconnect every 5s
+      wsRetryTimer = setTimeout(connectWS, 5000);
+    };
+
+    ws.onerror = () => {
+      // Handled by onclose
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        handleServerMessage(msg);
+      } catch { /* ignore malformed */ }
+    };
+
+  } catch {
+    wsOnline = false;
+    wsRetryTimer = setTimeout(connectWS, 5000);
+  }
+}
+
+function handleServerMessage(msg) {
+  switch (msg.type) {
+
+    case 'status':
+      log(`Server: ${msg.message}`, 'success');
+      log(`Categories: ${msg.categories} active`, 'info');
+      document.getElementById('stat-agent').textContent = 'CONNECTED';
+      break;
+
+    case 'log':
+      log(msg.message, msg.tag || 'info');
+      break;
+
+    case 'stage':
+      setStage(msg.id, msg.state);
+      break;
+
+    case 'scan_start':
+      document.getElementById('stat-agent').textContent = 'SCANNING';
+      document.getElementById('scan-btn').disabled = true;
+      // Update queue status
+      if (queueIndex >= 0) setTargetStatus(queueIndex, '◎');
+      break;
+
+    case 'intel':
+      // Update on-chain intelligence panel
+      const intelMap = {
+        exploitHistory: 'ctx-exploits',
+        scopeData:      'ctx-scope',
+        briefing:       'ctx-briefing',
+      };
+      if (intelMap[msg.key]) {
+        const el = document.getElementById(intelMap[msg.key]);
+        if (el) {
+          el.classList.remove('context-empty');
+          el.textContent = msg.value;
+        }
+      }
+      break;
+
+    case 'finding':
+      renderFinding(msg);
+      totalFindings++;
+      document.getElementById('stat-findings').textContent = totalFindings;
+      break;
+
+    case 'scan_complete':
+      document.getElementById('scan-btn').disabled = false;
+      document.getElementById('stat-agent').textContent = 'READY';
+      document.getElementById('intel-badge').textContent =
+        `${msg.totalFindings} FINDINGS`;
+      // Show human gate
+      currentReport = msg;
+      document.getElementById('human-gate').classList.add('visible');
+      // Update queue status
+      if (queueIndex >= 0) setTargetStatus(queueIndex, '✓');
+      // Update stats
+      scanCount++;
+      document.getElementById('stat-scans').textContent = scanCount;
+      document.getElementById('scan-count-badge').textContent = `SCANS: ${scanCount}`;
+      log(`Contract: ${msg.contractName}`, 'info');
+      log(`Report: ${msg.reportFile}`, 'info');
+      break;
+
+    case 'scan_error':
+      document.getElementById('scan-btn').disabled = false;
+      document.getElementById('stat-agent').textContent = 'ERROR';
+      log(`Scan failed: ${msg.error}`, 'error');
+      setStage('stage-4', 'failed');
+      if (queueIndex >= 0) setTargetStatus(queueIndex, '✗');
+      break;
+
+    case 'pong':
+      // heartbeat
+      break;
+  }
+}
+
+function renderFinding(f) {
+  const findingArea = document.getElementById('intel-panel');
+  const gate        = document.getElementById('human-gate');
+  const card        = document.createElement('div');
+  card.className    = `finding-card ${f.severity}`;
+  card.innerHTML    = `
+    <div class="finding-severity sev-${f.severity}">${f.severity.toUpperCase()} — ${f.category}</div>
+    <div class="finding-title">${f.title}</div>
+    <div class="finding-location">${f.location}</div>
+    ${f.confidence ? `<div class="finding-location" style="color:var(--text-dim);margin-top:3px">Confidence: ${f.confidence}</div>` : ''}
+  `;
+  findingArea.insertBefore(card, gate);
+  log(`[${f.severity.toUpperCase()}] ${f.title}`,
+    f.severity === 'Critical' || f.severity === 'High' ? 'warn' : 'info');
+}
+
+// Connect on load
+connectWS();
 
 let scanCount    = 0;
 let totalFindings = 0;
@@ -1585,8 +1780,8 @@ const DEMO_FINDINGS = [
 ];
 
 async function initiateScan() {
-  const input = document.getElementById('target-input');
-  const chain = document.getElementById('chain-select');
+  const input  = document.getElementById('target-input');
+  const chain  = document.getElementById('chain-select');
   const target = input.value.trim();
 
   if (!target || !target.startsWith('0x') || target.length < 10) {
@@ -1594,6 +1789,41 @@ async function initiateScan() {
     return;
   }
 
+  // Get target metadata from queue if available
+  const qTarget = queueIndex >= 0 ? targetQueue[queueIndex] : null;
+
+  // ── LIVE MODE — server connected ──────────────────────────
+  if (wsOnline && ws && ws.readyState === WebSocket.OPEN) {
+    log(`Live scan initiated via R4qib server`, 'agent');
+    resetStages();
+    setStage('stage-idle', 'complete');
+    setStage('stage-4', 'active');
+
+    // Clear previous findings
+    document.querySelectorAll('.finding-card').forEach(el => el.remove());
+    document.getElementById('ctx-exploits').innerHTML = '<span class="context-empty">—</span>';
+    document.getElementById('ctx-scope').innerHTML    = '<span class="context-empty">—</span>';
+    document.getElementById('ctx-briefing').innerHTML = '<span class="context-empty">—</span>';
+    document.getElementById('human-gate').classList.remove('visible');
+
+    ws.send(JSON.stringify({
+      type:        'scan',
+      address:     target,
+      chain:       chain.value,
+      targetName:  qTarget?.name  || target.slice(0,10) + '...',
+      notes:       qTarget?.notes || '',
+      attackAngle: qTarget?.attackAngle || '',
+    }));
+    return;
+  }
+
+  // ── DEMO MODE — server offline ────────────────────────────
+  log('Server offline — running demo simulation', 'warn');
+  log('Start server: node core/r4qib-server.js', 'warn');
+  await runDemoScan(target, chain.value);
+}
+
+async function runDemoScan(target, chainValue) {
   const btn = document.getElementById('scan-btn');
   btn.disabled = true;
   document.getElementById('human-gate').classList.remove('visible');
@@ -1602,16 +1832,11 @@ async function initiateScan() {
   activeScanId = scanCount;
   document.getElementById('stat-scans').textContent = scanCount;
   document.getElementById('scan-count-badge').textContent = `SCANS: ${scanCount}`;
-  document.getElementById('stat-chain').textContent = chain.value.toUpperCase().replace('-',' ');
+  document.getElementById('stat-chain').textContent = chainValue.toUpperCase().replace(/-/g,' ');
 
-  // Reset intel panel
-  document.getElementById('ctx-exploits').innerHTML = '<span class="context-empty">Fetching...</span>';
-  document.getElementById('ctx-scope').innerHTML    = '<span class="context-empty">Fetching...</span>';
-  document.getElementById('ctx-briefing').innerHTML = '<span class="context-empty">Awaiting briefing...</span>';
-
-  log(`Scan #${scanCount} initiated`, 'info');
+  log(`[DEMO] Scan #${scanCount} initiated`, 'warn');
   log(`Target: ${target}`, 'info');
-  log(`Chain: ${chain.value}`, 'info');
+  log(`Chain: ${chainValue}`, 'info');
   log(`Requesting R4qibAgent.requestScan()...`, 'agent');
 
   resetStages();
@@ -1777,6 +2002,17 @@ async function typewriterUpdate(elId, text, speed = 12) {
   }
 }
 
+function copyStartCmd() {
+  navigator.clipboard.writeText('start-r4qib.bat').then(() => {
+    const el = document.querySelector('.offline-cmd');
+    const orig = el.textContent;
+    el.textContent = 'copied ✓';
+    setTimeout(() => el.textContent = orig, 1500);
+  }).catch(() => {
+    log('Copy failed — run: start-r4qib.bat from your r4qib folder', 'info');
+  });
+}
+
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ── Block Counter (simulated) ─────────────────────────────────
@@ -1840,6 +2076,9 @@ window.addEventListener('load', () => {
   resizeCanvas();
   startMatrixInterval();
   resetStages();
+
+  // Show offline banner immediately — hides when server connects
+  document.getElementById('offline-banner').classList.add('visible');
 
   // Persist chain selection changes
   document.getElementById('chain-select').addEventListener('change', function() {
