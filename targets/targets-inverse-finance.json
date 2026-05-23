@@ -1,7 +1,7 @@
 [
   {
     "name": "PSMFed v2",
-    "address": "0x67fC2c1e4bA1244D89A0E960aA9B4B3F7FA69Fcc",
+    "address": "0x67fc2c1e4ba1244d89a0e960aa9b4b3f7fa69fcc",
     "chain": "ethereum-mainnet",
     "programme": "Inverse Finance — Immunefi $100k max critical",
     "addedToScope": "2025-12-30",
@@ -10,7 +10,7 @@
   },
   {
     "name": "DOLA PSM v2",
-    "address": "0x1d0218A2F9ADa55D3c9Cb7bC67E89D7Ed9290dfa",
+    "address": "0x1d0218a2f9ada55d3c9cb7bc67e89d7ed9290dfa",
     "chain": "ethereum-mainnet",
     "programme": "Inverse Finance — Immunefi $100k max critical",
     "addedToScope": "2025-12-30",
@@ -19,7 +19,7 @@
   },
   {
     "name": "FiRM CurveDolaLPHelper v2",
-    "address": "0x8084d0b5Ee6Ac4a34C14B5D1Ff9A08eF1aF8F5E0",
+    "address": "0x8084d0b5ee6ac4a34c14b5d1ff9a08ef1af8f5e0",
     "chain": "ethereum-mainnet",
     "programme": "Inverse Finance — Immunefi $100k max critical",
     "addedToScope": "2025-07-02",

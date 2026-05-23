@@ -6,6 +6,7 @@
 
 import { ethers } from 'ethers';
 import https from 'https';
+import 'dotenv/config';
 
 export const CHAINS = {
   'somnia-testnet': {
@@ -25,13 +26,13 @@ export const CHAINS = {
     explorerApiUrl: 'https://explorer.somnia.network/api',
   },
   'ethereum-mainnet': {
-    name: 'Ethereum Mainnet',
-    rpcUrl: 'https://eth.public-rpc.com',
-    chainId: 1,
-    symbol: 'ETH',
-    explorerUrl: 'https://etherscan.io',
-    explorerApiUrl: 'https://api.etherscan.io/api',
-  },
+  name: 'Ethereum Mainnet',
+  rpcUrl: process.env.ALCHEMY_ETH_URL || 'https://ethereum-rpc.publicnode.com',
+  chainId: 1,
+  symbol: 'ETH',
+  explorerUrl: 'https://etherscan.io',
+  explorerApiUrl: 'https://api.etherscan.io/v2/api',
+},
   'base-mainnet': {
     name: 'Base Mainnet',
     rpcUrl: 'https://mainnet.base.org',
@@ -74,7 +75,9 @@ export async function getContractBytecode(address, chainKey = 'somnia-testnet') 
 
 export async function getVerifiedSource(address, chainKey = 'somnia-testnet') {
   const chain = CHAINS[chainKey];
-  const url = `${chain.explorerApiUrl}?module=contract&action=getsourcecode&address=${address}`;
+  const apiKey = process.env.ETHERSCAN_API_KEY ? `&apikey=${process.env.ETHERSCAN_API_KEY}` : '';
+  const chainId = chain.chainId ? `&chainid=${chain.chainId}` : '';
+  const url = `${chain.explorerApiUrl}?module=contract&action=getsourcecode&address=${address}${chainId}${apiKey}`;
   return new Promise((resolve) => {
     https.get(url, (res) => {
       let data = '';

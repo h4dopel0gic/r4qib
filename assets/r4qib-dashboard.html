@@ -1547,23 +1547,32 @@ function setTargetStatus(i, icon) {
 
 // ── WebSocket Client — Real Pipeline Bridge ───────────────────
 
-let ws         = null;
-let wsOnline   = false;
-let wsRetryTimer = null;
+let ws            = null;
+let wsOnline      = false;
+let wsRetryTimer  = null;
+let wsWasOnline   = false; // track previous state to suppress noise
 
 function connectWS() {
+  // Clean up previous socket if exists
+  if (ws) {
+    ws.onopen = null;
+    ws.onclose = null;
+    ws.onerror = null;
+    ws.onmessage = null;
+  }
+
   try {
     ws = new WebSocket('ws://localhost:3001');
 
     ws.onopen = () => {
-      wsOnline = true;
+      wsOnline    = true;
+      wsWasOnline = true;
       clearTimeout(wsRetryTimer);
       document.getElementById('status-label').textContent = 'ONLINE';
       document.querySelector('.status-dot').style.background = '#00ffaa';
       document.querySelector('.status-dot').style.boxShadow = '0 0 8px #00ffaa';
       document.getElementById('offline-banner').classList.remove('visible');
-      log('R4qib server connected — ws://localhost:3001', 'success');
-      log('Live pipeline active. Real scan mode enabled.', 'success');
+      log('R4qib server connected — live scan mode active', 'success');
     };
 
     ws.onclose = () => {
@@ -1572,14 +1581,15 @@ function connectWS() {
       document.querySelector('.status-dot').style.background = 'var(--accent)';
       document.querySelector('.status-dot').style.boxShadow = '0 0 8px var(--accent)';
       document.getElementById('offline-banner').classList.add('visible');
-      log('Server offline — demo mode active. Run: start-r4qib.bat', 'warn');
-      // Auto-reconnect every 5s
+      // Only log when transitioning from online → offline, not on every retry
+      if (wsWasOnline) {
+        log('Server disconnected — demo mode active', 'warn');
+        wsWasOnline = false;
+      }
       wsRetryTimer = setTimeout(connectWS, 5000);
     };
 
-    ws.onerror = () => {
-      // Handled by onclose
-    };
+    ws.onerror = () => { /* handled by onclose */ };
 
     ws.onmessage = (event) => {
       try {
@@ -1688,8 +1698,7 @@ function renderFinding(f) {
     f.severity === 'Critical' || f.severity === 'High' ? 'warn' : 'info');
 }
 
-// Connect on load
-connectWS();
+// Connect on load — called from window.addEventListener('load') below
 
 let scanCount    = 0;
 let totalFindings = 0;
@@ -2091,15 +2100,16 @@ window.addEventListener('load', () => {
     ['R4qib v1.0 — Somnia Agentathon', 'info', 200],
     ['The Watcher initialising...', 'info', 500],
     ['Tifinagh matrix online', 'success', 800],
-    ['Connecting to Somnia Shannon Testnet...', 'agent', 1100],
-    ['Chain ID: 50312 — Block streaming active', 'success', 1600],
-    ['Agent IDs loaded — LLM Inference / Parse Website / JSON API', 'agent', 2000],
-    ['Watcher listening for ScanComplete events...', 'success', 2400],
-    ['Human-in-the-Loop gate: ARMED', 'human', 2800],
-    ['Ready. Enter target address above.', 'info', 3200],
+    ['Connecting to R4qib server...', 'agent', 1100],
+    ['Agent IDs loaded — LLM Inference / Parse Website / JSON API', 'agent', 1600],
+    ['Human-in-the-Loop gate: ARMED', 'human', 2000],
+    ['Ready. Start server or enter address for demo mode.', 'info', 2400],
   ];
   boots.forEach(([msg, tag, delay]) => log(msg, tag, delay));
   document.getElementById('stat-agent').textContent = 'READY';
+
+  // Connect WebSocket after DOM is fully ready
+  setTimeout(connectWS, 2800);
 });
 </script>
 </body>

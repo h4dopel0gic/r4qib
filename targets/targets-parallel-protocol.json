@@ -1,0 +1,74 @@
+[
+  {
+    "name": "ParallelizerUSDp — Main Diamond",
+    "address": "0x6efeddf9269c3683ba516cb0e2124fe335f262a2",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "Main diamond proxy. Fork of Angle Transmuter. Delegates to all facets. Highest value target. Diamond proxy storage — check slot collision between facets.",
+    "attackAngle": "Diamond storage collision, delegatecall hijacking, facet upgrade access control, protocol insolvency via mint/burn manipulation"
+  },
+  {
+    "name": "Parallelizer Swapper Facet",
+    "address": "0x506ba37aa8e265be445913b9c4080852277f3c5a",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "Mint and burn logic for USDp. Adaptive fees. Primary attack surface for stablecoin depeg via fee manipulation or oracle bypass.",
+    "attackAngle": "Oracle manipulation, adaptive fee bypass, flash loan mint/burn arbitrage, rounding errors in fee calculation"
+  },
+  {
+    "name": "Parallelizer Redeemer Facet",
+    "address": "0x1bb46fc55e3fd91ca0f162dcc0b3ef574c8ff97e",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "Redemption logic — users burn USDp for basket assets. Proportional redemption mechanics. Check reserve accounting and slippage.",
+    "attackAngle": "Reserve drain via redemption, proportional accounting errors, slippage exploitation, reentrancy on asset transfer"
+  },
+  {
+    "name": "FlashParallel — Flashloan Module",
+    "address": "0xc9b6279baa19dbb8bcc3250c89caa093aaba0bfc",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "Flash loan module. Historically rich attack surface — flash loans are the entry vector for most DeFi exploits. Check fee enforcement, reentrancy, and repayment validation.",
+    "attackAngle": "Flash loan fee bypass, reentrancy via callback, repayment validation bypass, combined flash loan + swap attack"
+  },
+  {
+    "name": "USDp Token",
+    "address": "0x9b3a8f7cec208e247d97dee13313690977e24459",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "USDp stablecoin ERC20. Minted by Parallelizer. Check minting access control, burn logic, permit() implementation, supply cap.",
+    "attackAngle": "Unauthorized minting, access control on mint/burn, ERC20 permit() replay, infinite approval exploitation"
+  },
+  {
+    "name": "sUSDp — Savings Module",
+    "address": "0x0d45b129dc868963025db79a9074ea9c9e32cae4",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "Savings/yield vault for USDp. ERC4626 likely. Check share price manipulation, deposit/withdraw rounding, and yield harvesting logic.",
+    "attackAngle": "Share price inflation attack, deposit/withdraw rounding exploit, yield harvesting front-running, vault insolvency"
+  },
+  {
+    "name": "SettersGovernor Facet",
+    "address": "0xeb197439d1425f3129f01f7763ec511df2489095",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "Governance parameter setters. Any unprotected setter is a direct path to protocol insolvency — collateral ratios, fee parameters, oracle addresses.",
+    "attackAngle": "Unprotected parameter setters, timelock bypass, governance role escalation, collateral ratio manipulation"
+  },
+  {
+    "name": "ParallelAccessManager",
+    "address": "0x94ea8800444017695345156319e96bdb1e355f7a",
+    "chain": "ethereum-mainnet",
+    "programme": "Parallel Protocol — Immunefi $250k max critical",
+    "addedToScope": "2025-10-02",
+    "notes": "Central access control contract. Gates all privileged calls across the protocol. If this is compromised everything is. Check role assignment, escalation paths, and admin transfer logic.",
+    "attackAngle": "Role escalation, admin transfer to zero address, missing role checks, cross-contract privilege bypass"
+  }
+]
