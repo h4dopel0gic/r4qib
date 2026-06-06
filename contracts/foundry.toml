@@ -1,0 +1,10 @@
+[profile.default]
+src = "src"
+out = "out"
+gas_limit = 9000000
+optimizer = true
+optimizer_runs = 1
+via_ir = true
+libs = ["lib"]
+
+# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

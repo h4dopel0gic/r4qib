@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R4qib — الرقيب | Somnia Agentathon 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #020818;
+  --bg2:      #040d24;
+  --primary:  #00d4ff;
+  --secondary:#0066ff;
+  --accent:   #ff006e;
+  --accent2:  #7b00ff;
+  --dim:      #003a5c;
+  --text:     #a8d8ea;
+  --text-dim: #2a6070;
+  --glow:     0 0 10px var(--primary), 0 0 30px var(--secondary);
+  --glow-sm:  0 0 6px var(--primary);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  height: 100vh;
+  overflow: hidden;
+  cursor: crosshair;
+}
+
+/* ── Matrix Rain ── */
+#matrix-canvas {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* ── Slide Container ── */
+.deck {
+  position: relative;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 80px;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  pointer-events: none;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.slide.exit {
+  opacity: 0;
+  transform: translateY(-30px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* ── Scan line effect ── */
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,212,255,0.015) 2px,
+    rgba(0,212,255,0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.slide > * { position: relative; z-index: 1; }
+
+/* ── Nav ── */
+.nav {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.nav-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--dim);
+  border: 1px solid var(--dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.nav-dot.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: var(--glow-sm);
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid var(--dim);
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  padding: 4px 12px;
+  cursor: pointer;
+  letter-spacing: 0.15em;
+  transition: all 0.2s;
+}
+
+.nav-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: var(--glow-sm);
+}
+
+.slide-counter {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* ── Corner decoration ── */
+.corner {
+  position: fixed;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  font-family: 'Orbitron', sans-serif;
+  z-index: 50;
+}
+.corner.tl { top: 20px; left: 24px; }
+.corner.tr { top: 20px; right: 24px; text-align: right; }
+.corner.bl { bottom: 60px; left: 24px; }
+.corner.br { bottom: 60px; right: 24px; text-align: right; }
+
+/* ── Border frame ── */
+.frame {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  border: 1px solid rgba(0,212,255,0.08);
+}
+
+.frame::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 40px; height: 40px;
+  border-top: 2px solid var(--primary);
+  border-left: 2px solid var(--primary);
+  box-shadow: var(--glow-sm);
+}
+
+.frame::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 40px; height: 40px;
+  border-bottom: 2px solid var(--primary);
+  border-right: 2px solid var(--primary);
+  box-shadow: var(--glow-sm);
+}
+
+/* ── Typography ── */
+.eyebrow {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  color: var(--primary);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eyebrow::before, .eyebrow::after {
+  content: '';
+  flex: 1;
+  max-width: 60px;
+  height: 1px;
+  background: var(--primary);
+  opacity: 0.4;
+}
+
+h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2.5rem, 5vw, 4.5rem);
+  font-weight: 900;
+  color: var(--primary);
+  text-shadow: var(--glow);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.arabic {
+  font-family: serif;
+  font-size: clamp(1.8rem, 3.5vw, 3rem);
+  color: var(--text);
+  letter-spacing: 0.1em;
+  margin-bottom: 20px;
+  opacity: 0.85;
+}
+
+h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.4rem, 2.5vw, 2.2rem);
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 0.08em;
+  margin-bottom: 32px;
+  text-shadow: var(--glow-sm);
+}
+
+.subtitle {
+  font-size: clamp(0.8rem, 1.5vw, 1rem);
+  color: var(--text);
+  letter-spacing: 0.2em;
+  text-align: center;
+  line-height: 2;
+  max-width: 600px;
+}
+
+.tagline {
+  font-size: clamp(0.9rem, 1.8vw, 1.2rem);
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  margin-top: 16px;
+  font-style: italic;
+}
+
+/* ── Content blocks ── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.col-block {
+  border: 1px solid var(--dim);
+  padding: 24px 28px;
+  background: rgba(0,0,0,0.3);
+  position: relative;
+}
+
+.col-block::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 30px; height: 2px;
+  background: var(--primary);
+}
+
+.col-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  color: var(--primary);
+  letter-spacing: 0.3em;
+  margin-bottom: 16px;
+}
+
+.col-item {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 2.2;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.col-item::before {
+  content: '—';
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.col-item.highlight {
+  color: var(--text);
+}
+
+.col-item.highlight::before {
+  content: '✓';
+  color: #00ffaa;
+}
+
+/* ── Stat blocks ── */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.stat-block {
+  border: 1px solid var(--dim);
+  padding: 20px 24px;
+  text-align: center;
+  background: rgba(0,0,0,0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-block::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: var(--primary);
+  opacity: 0.3;
+}
+
+.stat-number {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-weight: 900;
+  color: var(--primary);
+  text-shadow: var(--glow);
+  display: block;
+}
+
+.stat-label {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  margin-top: 6px;
+  display: block;
+}
+
+/* ── Pipeline diagram ── */
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 700px;
+}
+
+.pipe-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--dim);
+  background: rgba(0,0,0,0.3);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  transition: border-color 0.2s;
+}
+
+.pipe-row:hover { border-color: var(--primary); }
+
+.pipe-badge {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  padding: 2px 8px;
+  letter-spacing: 0.15em;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.pipe-badge.somnia { color: var(--primary); border-color: var(--primary); }
+.pipe-badge.local  { color: #00ffaa; border-color: #00ffaa; }
+.pipe-badge.human  { color: var(--accent); border-color: var(--accent); }
+.pipe-badge.chain  { color: var(--accent2); border-color: var(--accent2); }
+
+.pipe-arrow {
+  color: var(--text-dim);
+  font-size: 0.65rem;
+}
+
+.pipe-text { color: var(--text); }
+.pipe-sub  { color: var(--text-dim); font-size: 0.7rem; margin-left: auto; }
+
+/* ── Category list ── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 40px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.cat-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,212,255,0.06);
+}
+
+.cat-num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.6rem;
+  color: var(--primary);
+  min-width: 20px;
+}
+
+.cat-name { color: var(--text); }
+.cat-tag  {
+  margin-left: auto;
+  font-size: 0.6rem;
+  color: var(--accent);
+  letter-spacing: 0.15em;
+  border: 1px solid var(--accent);
+  padding: 1px 6px;
+}
+
+/* ── Finding cards ── */
+.finding-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.finding {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid var(--dim);
+  background: rgba(0,0,0,0.3);
+}
+
+.finding-sev {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.55rem;
+  padding: 3px 8px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  border: 1px solid;
+  align-self: flex-start;
+}
+
+.sev-high     { color: #ff6b35; border-color: #ff6b35; }
+.sev-medium   { color: #ffb700; border-color: #ffb700; }
+.sev-research { color: var(--text-dim); border-color: var(--dim); }
+
+.finding-body { flex: 1; }
+.finding-title { color: var(--text); font-size: 0.78rem; line-height: 1.5; }
+.finding-loc   { color: var(--text-dim); font-size: 0.68rem; margin-top: 4px; }
+
+/* ── Quote block ── */
+.quote-block {
+  border-left: 2px solid var(--primary);
+  padding: 16px 24px;
+  max-width: 700px;
+  margin: 16px 0;
+}
+
+.quote-text {
+  font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+  color: var(--text);
+  line-height: 1.8;
+  letter-spacing: 0.05em;
+  font-style: italic;
+}
+
+.quote-source {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  margin-top: 10px;
+}
+
+/* ── Address block ── */
+.addr {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--primary);
+  background: rgba(0,212,255,0.05);
+  border: 1px solid var(--dim);
+  padding: 8px 16px;
+  letter-spacing: 0.05em;
+  margin-top: 8px;
+}
+
+/* ── CTA close ── */
+.cta-row {
+  display: flex;
+  gap: 20px;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.cta-link {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.65rem;
+  color: var(--primary);
+  letter-spacing: 0.2em;
+  border: 1px solid var(--primary);
+  padding: 8px 20px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.cta-link:hover {
+  background: rgba(0,212,255,0.08);
+  box-shadow: var(--glow);
+}
+
+/* ── Highlight pill ── */
+.pill {
+  display: inline-block;
+  font-size: 0.65rem;
+  padding: 3px 10px;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  letter-spacing: 0.15em;
+  margin: 3px;
+}
+
+.pill.accent { border-color: var(--accent); color: var(--accent); }
+.pill.green  { border-color: #00ffaa; color: #00ffaa; }
+
+/* ── Logo mark ── */
+.logo-mark {
+  width: 80px; height: 80px;
+  border: 2px solid var(--primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--primary);
+  text-shadow: var(--glow);
+  box-shadow: var(--glow);
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.logo-mark::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.2);
+}
+
+/* ── Divider ── */
+.divider {
+  width: 80px;
+  height: 1px;
+  background: var(--primary);
+  opacity: 0.4;
+  margin: 20px auto;
+}
+
+/* ── Animations ── */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.slide.active .pipe-row,
+.slide.active .col-block,
+.slide.active .stat-block,
+.slide.active .finding,
+.slide.active .cat-item {
+  animation: fadein 0.4s ease forwards;
+}
+
+.slide.active .pipe-row:nth-child(1) { animation-delay: 0.05s; opacity: 0; }
+.slide.active .pipe-row:nth-child(2) { animation-delay: 0.1s;  opacity: 0; }
+.slide.active .pipe-row:nth-child(3) { animation-delay: 0.15s; opacity: 0; }
+.slide.active .pipe-row:nth-child(4) { animation-delay: 0.2s;  opacity: 0; }
+.slide.active .pipe-row:nth-child(5) { animation-delay: 0.25s; opacity: 0; }
+.slide.active .pipe-row:nth-child(6) { animation-delay: 0.3s;  opacity: 0; }
+.slide.active .pipe-row:nth-child(7) { animation-delay: 0.35s; opacity: 0; }
+
+.slide.active .col-block:nth-child(1) { animation-delay: 0.1s; opacity: 0; }
+.slide.active .col-block:nth-child(2) { animation-delay: 0.2s; opacity: 0; }
+
+.slide.active .stat-block:nth-child(1) { animation-delay: 0.05s; opacity: 0; }
+.slide.active .stat-block:nth-child(2) { animation-delay: 0.15s; opacity: 0; }
+.slide.active .stat-block:nth-child(3) { animation-delay: 0.25s; opacity: 0; }
+
+.slide.active .finding:nth-child(1) { animation-delay: 0.1s; opacity: 0; }
+.slide.active .finding:nth-child(2) { animation-delay: 0.2s; opacity: 0; }
+.slide.active .finding:nth-child(3) { animation-delay: 0.3s; opacity: 0; }
+
+.slide.active .cat-item { animation-delay: calc(var(--i, 0) * 0.06s); opacity: 0; }
+
+/* ── Key hint ── */
+.key-hint {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.58rem;
+  color: var(--text-dim);
+  letter-spacing: 0.2em;
+  z-index: 50;
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrix-canvas"></canvas>
+<div class="frame"></div>
+
+<div class="corner tl">R4QIB — الرقيب</div>
+<div class="corner tr">SOMNIA AGENTATHON 2026</div>
+<div class="corner bl">h4dopel0gic · SAKIN.AI</div>
+<div class="corner br" id="slide-label">SLIDE 1 / 8</div>
+<div class="key-hint">← → ARROW KEYS OR CLICK TO NAVIGATE</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 1 — COVER                                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="deck">
+
+<div class="slide active" id="slide-1">
+  <div class="logo-mark">R4</div>
+  <div class="eyebrow">Somnia Agentathon 2026</div>
+  <h1>R4QIB</h1>
+  <div class="arabic">الرقيب — The Watcher</div>
+  <div class="subtitle">
+    AUTONOMOUS SMART CONTRACT INVESTIGATION<br/>
+    BUILT NATIVELY ON SOMNIA'S AGENTIC L1
+  </div>
+  <div class="divider"></div>
+  <div class="tagline">
+    <span class="pill green">PIPELINE PROVEN</span>
+    <span class="pill">22 LIVE SCANS</span>
+    <span class="pill">ETHEREUM MAINNET</span>
+    <span class="pill accent">SOMNIA TESTNET LIVE</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 2 — THE PROBLEM                                  -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-2">
+  <div class="eyebrow">The Problem</div>
+  <h2>$2.3 BILLION LOST IN 2024 ALONE</h2>
+  <div class="finding-list">
+    <div class="finding">
+      <span class="finding-sev sev-high">CRITICAL</span>
+      <div class="finding-body">
+        <div class="finding-title">Resolv Protocol — $25,000,000</div>
+        <div class="finding-loc">March 22, 2026 · Unconstrained SERVICE_ROLE mint authority · 18 audits · Root cause unfixed</div>
+      </div>
+    </div>
+    <div class="finding">
+      <span class="finding-sev sev-high">CRITICAL</span>
+      <div class="finding-body">
+        <div class="finding-title">Bybit Exchange — $1,500,000,000</div>
+        <div class="finding-loc">February 2025 · Safe multisig UI poisoning · Social engineering + contract manipulation</div>
+      </div>
+    </div>
+    <div class="finding">
+      <span class="finding-sev sev-high">CRITICAL</span>
+      <div class="finding-body">
+        <div class="finding-title">Radiant Capital — $50,000,000</div>
+        <div class="finding-loc">October 2024 · Compromised developer devices · Malicious transaction signing</div>
+      </div>
+    </div>
+  </div>
+  <div class="quote-block" style="margin-top:24px">
+    <div class="quote-text">Most were preventable. Existing tools find patterns. Nobody was reading intent.</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 3 — THE GAP                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-3">
+  <div class="eyebrow">Why R4qib</div>
+  <h2>STATIC TOOLS VS REASONING AGENT</h2>
+  <div class="two-col">
+    <div class="col-block">
+      <div class="col-label">Existing Tools</div>
+      <div class="col-item">Pattern matching only</div>
+      <div class="col-item">No exploit history context</div>
+      <div class="col-item">No protocol scope awareness</div>
+      <div class="col-item">Generic vulnerability reports</div>
+      <div class="col-item">Cloud dependent</div>
+      <div class="col-item">No human gate</div>
+      <div class="col-item">Findings leak publicly</div>
+    </div>
+    <div class="col-block">
+      <div class="col-label">R4qib</div>
+      <div class="col-item highlight">Intent + context reasoning</div>
+      <div class="col-item highlight">Live DeFiLlama exploit history</div>
+      <div class="col-item highlight">Immunefi scope aware</div>
+      <div class="col-item highlight">Adversarial attack briefing</div>
+      <div class="col-item highlight">Sovereign — fully local</div>
+      <div class="col-item highlight">Human gate non-negotiable</div>
+      <div class="col-item highlight">Findings stay off-chain</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 4 — ARCHITECTURE                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-4">
+  <div class="eyebrow">Architecture</div>
+  <h2>TWO-LAYER PIPELINE</h2>
+  <div class="pipeline">
+    <div class="pipe-row">
+      <span class="pipe-badge somnia">SOMNIA L1</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-text">JSON API Agent — DeFiLlama exploit history</span>
+      <span class="pipe-sub">Agent ID 13174292974160097713</span>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge somnia">SOMNIA L1</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-text">LLM Parse Agent — Immunefi protocol scope</span>
+      <span class="pipe-sub">Agent ID 12875401142070969085</span>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge somnia">SOMNIA L1</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-text">LLM Inference — Adversarial briefing · Qwen3-30B · chainOfThought: true</span>
+      <span class="pipe-sub">Agent ID 12847293847561029384</span>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge chain">ON-CHAIN</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-text">ScanComplete emitted · R4qibAgent.sol · Somnia testnet</span>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge local">LOCAL</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-text">DeepSeek Coder v2 — 9 vulnerability categories — source chunker</span>
+      <span class="pipe-sub">16GB VRAM · sovereign</span>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge human">HUMAN</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-text">Review gate — researcher verifies every finding before anchoring</span>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge chain">ON-CHAIN</span>
+      <span class="pipe-arrow">→</span>
+      <span class="pipe-text">FindingsAnchored — SHA-256 report hash · immutable timestamp</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 5 — SOMNIA INTEGRATION                          -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-5">
+  <div class="eyebrow">Somnia Agentic L1</div>
+  <h2>NATIVE AGENT COORDINATION</h2>
+  <div class="stat-grid" style="margin-bottom:28px">
+    <div class="stat-block">
+      <span class="stat-number">3</span>
+      <span class="stat-label">SOMNIA AGENTS<br/>PER SCAN</span>
+    </div>
+    <div class="stat-block">
+      <span class="stat-number">~0.69</span>
+      <span class="stat-label">SOMI<br/>PER SCAN</span>
+    </div>
+    <div class="stat-block">
+      <span class="stat-number">22</span>
+      <span class="stat-label">SCANS<br/>COMPLETED</span>
+    </div>
+  </div>
+  <div class="addr">R4qibAgent.sol · 0xaFe929149BD912296F3665a4299F65f76BBCf402</div>
+  <div style="margin-top:20px; text-align:center">
+    <div class="col-item" style="justify-content:center; margin-bottom:8px">
+      <span style="color:var(--text-dim); font-size:0.75rem; letter-spacing:0.1em">
+        Somnia is the trust and coordination layer — not just a target chain.<br/>
+        R4qib uses Somnia agents for intelligence gathering before every analysis.
+      </span>
+    </div>
+    <div style="margin-top:12px">
+      <span class="pill green">GRACEFUL DEGRADATION</span>
+      <span class="pill">TWO-AGENT FALLBACK</span>
+      <span class="pill">SAME HANDLING ALL FAILURES</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 6 — LIVE RESEARCH                               -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-6">
+  <div class="eyebrow">Live Research</div>
+  <h2>RESOLV PROTOCOL · $25M EXPLOIT</h2>
+  <div class="two-col">
+    <div class="col-block">
+      <div class="col-label">What R4qib Found</div>
+      <div class="col-item highlight">Architectural flaw persists post-exploit</div>
+      <div class="col-item highlight">completeSwap() still unconstrained</div>
+      <div class="col-item highlight">Same pattern in RLP manager — deferred</div>
+      <div class="col-item highlight">Immunefi scope exclusion identified</div>
+      <div class="col-item highlight">Zero false reports submitted</div>
+    </div>
+    <div class="col-block">
+      <div class="col-label">Also Confirmed</div>
+      <div class="col-item highlight">Parallel Protocol known issues corroborated without access to documentation</div>
+      <div class="col-item highlight">Certora-verified Diamond proxy correctly identified as clean</div>
+      <div class="col-item highlight">USDT0 $6M bounty — flash loan vector flagged for review</div>
+    </div>
+  </div>
+  <div class="quote-block" style="margin-top:20px">
+    <div class="quote-text">"R4qib found what 18 audits missed. It correctly knew it couldn't report it."</div>
+    <div class="quote-source">SOVEREIGN INTELLIGENCE — INTEGRITY BUILT INTO THE ARCHITECTURE</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 7 — NOVEL CATEGORIES                            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-7">
+  <div class="eyebrow">Original Research</div>
+  <h2>THREE NOVEL VULNERABILITY CLASSES</h2>
+  <div class="pipeline">
+    <div class="pipe-row">
+      <span class="pipe-badge accent" style="color:var(--accent);border-color:var(--accent)">R4qib-001</span>
+      <div style="flex:1">
+        <div class="pipe-text" style="margin-bottom:4px">Semantic Intent Mismatch</div>
+        <div style="font-size:0.68rem;color:var(--text-dim)">NatSpec claims vs code reality — invisible to static analysis. Confirmed in Resolv requestSwapWithPermit() try/catch bypass.</div>
+      </div>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge accent" style="color:var(--accent);border-color:var(--accent)">R4qib-004</span>
+      <div style="flex:1">
+        <div class="pipe-text" style="margin-bottom:4px">Unconstrained Off-Chain Completion Authority</div>
+        <div style="font-size:0.68rem;color:var(--text-dim)">Privileged role calls complete*() with signed amount — no on-chain ratio check, no oracle, no cap. Root cause of Resolv $25M exploit. Confirmed across two contracts.</div>
+      </div>
+    </div>
+    <div class="pipe-row">
+      <span class="pipe-badge accent" style="color:var(--accent);border-color:var(--accent)">R4qib-003</span>
+      <div style="flex:1">
+        <div class="pipe-text" style="margin-bottom:4px">Agent Trust Boundary Violations</div>
+        <div style="font-size:0.68rem;color:var(--text-dim)">Novel threat class for on-chain agent architectures. No SWC reference exists. Covers parameter injection, identity spoofing, quorum hijacking, context poisoning.</div>
+      </div>
+    </div>
+  </div>
+  <div style="text-align:center;margin-top:20px;font-size:0.72rem;color:var(--text-dim);letter-spacing:0.15em">
+    Zero prior coverage in existing tooling or SWC references.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- SLIDE 8 — CLOSE                                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="slide" id="slide-8">
+  <div class="logo-mark" style="width:60px;height:60px;font-size:1rem">R4</div>
+  <h1 style="font-size:clamp(2rem,4vw,3.5rem)">THE WATCHER</h1>
+  <div class="arabic" style="font-size:clamp(1.2rem,2.5vw,2rem)">الرقيب</div>
+  <div class="divider"></div>
+  <div class="stat-grid" style="margin:20px 0;max-width:600px">
+    <div class="stat-block">
+      <span class="stat-number" style="font-size:1.4rem">22</span>
+      <span class="stat-label">LIVE SCANS</span>
+    </div>
+    <div class="stat-block">
+      <span class="stat-number" style="font-size:1.4rem">9</span>
+      <span class="stat-label">CATEGORIES</span>
+    </div>
+    <div class="stat-block">
+      <span class="stat-number" style="font-size:1.4rem">0</span>
+      <span class="stat-label">FALSE REPORTS</span>
+    </div>
+  </div>
+  <div class="quote-block">
+    <div class="quote-text" style="text-align:center">
+      Sovereign. Local. Human-gated.<br/>
+      Somnia thinks. DeepSeek analyses. Human decides.
+    </div>
+  </div>
+  <div class="cta-row">
+    <a class="cta-link" href="https://github.com/h4dopel0gic/r4qib" target="_blank">GITHUB</a>
+    <a class="cta-link" href="https://shannon-explorer.somnia.network/address/0xaFe929149BD912296F3665a4299F65f76BBCf402" target="_blank">CONTRACT</a>
+  </div>
+  <div style="margin-top:20px;font-size:0.65rem;color:var(--text-dim);letter-spacing:0.2em;text-align:center;font-style:italic">
+    "The Watcher sees what tools miss. Build accordingly."
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- Nav -->
+<div class="nav">
+  <button class="nav-btn" id="prev-btn">← PREV</button>
+  <div id="dots"></div>
+  <div class="slide-counter" id="counter">1 / 8</div>
+  <button class="nav-btn" id="next-btn">NEXT →</button>
+</div>
+
+<script>
+// ── Matrix Rain ─────────────────────────────────────────
+const canvas = document.getElementById('matrix-canvas');
+const ctx    = canvas.getContext('2d');
+const TIFI   = 'ⴰⴱⴲⴳⴴⴵⴶⴷⴸⴹⴺⴻⴼⴽⴾⴿⵀⵁⵂⵃⵄⵅⵆⵇⵈⵉⵊⵋⵌⵍⵎⵏⵐⵑⵒⵓⵔⵕⵖⵗⵘⵙⵚⵛⵜⵝⵞⵟ';
+
+let cols, drops;
+
+function initMatrix() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const fs = 14;
+  cols  = Math.floor(canvas.width / fs);
+  drops = Array(cols).fill(1);
+}
+
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(2,8,24,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.font = '13px Share Tech Mono';
+  for (let i = 0; i < drops.length; i++) {
+    const ch = TIFI[Math.floor(Math.random() * TIFI.length)];
+    const x  = i * 14;
+    const y  = drops[i] * 14;
+    ctx.fillStyle = i % 7 === 0 ? '#ffffff' : '#00d4ff';
+    ctx.fillText(ch, x, y);
+    if (y > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  }
+}
+
+initMatrix();
+setInterval(drawMatrix, 45);
+window.addEventListener('resize', initMatrix);
+
+// ── Slide Engine ────────────────────────────────────────
+const TOTAL  = 8;
+let current  = 1;
+
+const slides = () => document.querySelectorAll('.slide');
+const dotsEl = document.getElementById('dots');
+const counter = document.getElementById('counter');
+const label  = document.getElementById('slide-label');
+
+// Build dots
+for (let i = 1; i <= TOTAL; i++) {
+  const d = document.createElement('div');
+  d.className = 'nav-dot' + (i === 1 ? ' active' : '');
+  d.dataset.slide = i;
+  d.onclick = () => goTo(i);
+  dotsEl.appendChild(d);
+}
+
+function goTo(n) {
+  if (n < 1 || n > TOTAL) return;
+  const prev = document.getElementById(`slide-${current}`);
+  const next = document.getElementById(`slide-${n}`);
+  if (!next || prev === next) return;
+
+  prev.classList.remove('active');
+  prev.classList.add('exit');
+  setTimeout(() => prev.classList.remove('exit'), 300);
+
+  next.classList.add('active');
+  current = n;
+
+  // Update dots
+  document.querySelectorAll('.nav-dot').forEach((d, i) => {
+    d.classList.toggle('active', i + 1 === n);
+  });
+
+  counter.textContent = `${n} / ${TOTAL}`;
+  label.textContent   = `SLIDE ${n} / ${TOTAL}`;
+}
+
+document.getElementById('prev-btn').onclick = () => goTo(current - 1);
+document.getElementById('next-btn').onclick = () => goTo(current + 1);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown')  goTo(current + 1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')    goTo(current - 1);
+});
+
+// Touch swipe
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; });
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (Math.abs(dx) > 50) dx < 0 ? goTo(current + 1) : goTo(current - 1);
+});
+</script>
+</body>
+</html>

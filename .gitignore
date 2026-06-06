@@ -16,3 +16,11 @@ Thumbs.db
 # LMStudio / local model artifacts
 *.gguf
 *.bin
+# Foundry artifacts
+contracts/broadcast/
+contracts/cache/
+contracts/out/
+
+# Video files
+*.mp4
+*.mkv

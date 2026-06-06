@@ -1221,7 +1221,7 @@
   <div class="stats-bar">
     <div class="stat">
       <span class="stat-label">CHAIN</span>
-      <span class="stat-value" id="stat-chain">SOMNIA TESTNET</span>
+      <span class="stat-value" id="stat-chain">ETHEREUM MAINNET</span>
     </div>
     <div class="stat">
       <span class="stat-label">SCANS</span>
@@ -1624,6 +1624,42 @@ function handleServerMessage(msg) {
     case 'scan_start':
       document.getElementById('stat-agent').textContent = 'SCANNING';
       document.getElementById('scan-btn').disabled = true;
+      // Update chain label from watcher relay
+      // Watcher uses somnia-testnet for agent pipeline but analyses Ethereum mainnet contracts
+      if (msg.chain) {
+        const displayChain = msg.chain === 'somnia-testnet' ? 'ETHEREUM MAINNET' : msg.chain.toUpperCase().replace(/-/g,' ');
+        document.getElementById('stat-chain').textContent = displayChain;
+        updatePromptLabel('ethereum-mainnet');
+      }
+      // Auto-populate intel panel with research context when watcher fires
+      // This reflects real research data — Resolv exploit history and scope
+      if (msg.autoIntel !== false) {
+        setTimeout(async () => {
+          const exEl = document.getElementById('ctx-exploits');
+          const scEl = document.getElementById('ctx-scope');
+          if (exEl && exEl.classList.contains('context-empty')) {
+            exEl.classList.remove('context-empty');
+            await typewriterUpdate('ctx-exploits', DEMO_EXPLOIT_HISTORY, 12);
+          }
+          if (scEl && scEl.classList.contains('context-empty')) {
+            scEl.classList.remove('context-empty');
+            await typewriterUpdate('ctx-scope', DEMO_SCOPE, 10);
+          }
+          // Render briefing vectors
+          const briefingEl = document.getElementById('ctx-briefing');
+          if (briefingEl && !briefingEl.querySelector('.attack-vector')) {
+            briefingEl.innerHTML = '';
+            DEMO_BRIEFING_VECTORS.forEach((v, i) => {
+              const pill = document.createElement('div');
+              pill.className = 'attack-vector';
+              pill.style.animationDelay = `${i * 0.3}s`;
+              pill.textContent = v;
+              briefingEl.appendChild(pill);
+            });
+          }
+          document.getElementById('intel-badge').textContent = 'INTELLIGENCE READY';
+        }, 1200);
+      }
       // Update queue status
       if (queueIndex >= 0) setTargetStatus(queueIndex, '◎');
       break;
@@ -1771,21 +1807,23 @@ function resetStages() {
 // In production: replace with actual ethers.js event listener
 // connecting to deployed R4qibAgent.sol
 
-const DEMO_EXPLOIT_HISTORY = `Inverse Finance — $15.6M (Apr 2022): INV oracle price manipulation via SushiSwap spot price. Attacker used flash loan to skew on-chain price source. Root cause: spot price from DEX pool used as oracle without TWAP or Chainlink fallback. Fix: migrated to Chainlink feeds.`;
+const DEMO_EXPLOIT_HISTORY = `Resolv Protocol — $25M (Mar 22, 2026): Compromised AWS KMS key controlling SERVICE_ROLE. Attacker called completeSwap() with inflated _targetAmount — minted 80M unbacked USR against ~$200K USDC collateral (800:1 ratio). 18 audits across 5 firms. Root cause: no on-chain validation of mint ratio. Fix: key rotation + blacklist. Architectural flaw unresolved.`;
 
-const DEMO_SCOPE = `In-scope: PSMFed v2 (0x67fC...9Fcc), DOLA PSM v2 (0x1d02...0dfa), FiRM CurveDolaLPHelper v2 (0x8084...F5E0). Max bounty: $100,000 USDC (Critical). Oracle manipulation classified Critical.`;
+const DEMO_SCOPE = `In-scope: TheCounter (USR) 0xa27a69...55861, ExternalRequestsManager (RLP) 0x10f4d4...872. Max bounty: $500,000 USDC (Critical). Minting unbacked USR redeemable on Ethereum classified Critical. Attacks requiring privileged address compromise excluded.`;
 
 const DEMO_BRIEFING_VECTORS = [
-  'Flash loan oracle manipulation via remaining on-chain price sources in new PSM markets',
-  'Rounding / fee extraction in DOLA PSM v2 swap calculations under edge-case reserve conditions',
-  'LP token price manipulation via Curve callback reentrancy in FiRM CurveDolaLPHelper v2'
+  'Primary vector: completeSwap() accepts _targetAmount from SERVICE_ROLE with no on-chain collateral ratio validation — architectural flaw persists post-exploit',
+  'R4qib-001 candidate: requestSwapWithPermit() try/catch silently swallows permit failure — function name implies permit-gated security that does not exist',
+  'CEI violation: safeTransferFrom() called before request state recorded in _addSwapRequest() — ERC777 callback fires before swapRequestsCounter increments',
+  'R4qib-004 pattern: unconstrained off-chain completion authority — same class confirmed in ExternalRequestsManager.completeBurn() with slither-disable-next-line comment'
 ];
 
 const DEMO_FINDINGS = [
-  { severity: 'High', title: 'Potential Oracle Dependency in PSM Fee Calculation', location: 'PSMFed.sol:L147 calculateFee()' },
-  { severity: 'Medium', title: 'Unchecked Rounding in DOLA Swap Reserve Accounting', location: 'DOLAPSM.sol:L89 swap()' },
-  { severity: 'Low', title: 'Missing Slippage Guard on LP Helper Curve Interaction', location: 'CurveDolaLPHelper.sol:L203 addLiquidity()' },
-  { severity: 'Info', title: 'NatSpec Mismatch: mint() documentation vs access control', location: 'PSMFed.sol:L52' },
+  { severity: 'High', title: 'Architectural Flaw Persists — _targetAmount Unconstrained in completeSwap()', location: 'TheCounter.sol — completeSwap()' },
+  { severity: 'Medium', title: 'R4qib-001: requestSwapWithPermit Silent Permit Bypass', location: 'TheCounter.sol — requestSwapWithPermit()' },
+  { severity: 'Medium', title: 'R4qib-001: requestBurnWithPermit Silent Permit Bypass', location: 'ExternalRequestsManager.sol — requestBurnWithPermit()' },
+  { severity: 'Low', title: 'CEI Violation — Transfer Before State Update in requestSwap()', location: 'TheCounter.sol — requestSwap() / _addSwapRequest()' },
+  { severity: 'Info', title: 'R4qib-004: completeBurn() _withdrawalAmount No On-Chain Ceiling', location: 'ExternalRequestsManager.sol — completeBurn()' },
 ];
 
 async function initiateScan() {
@@ -1793,7 +1831,7 @@ async function initiateScan() {
   const chain  = document.getElementById('chain-select');
   const target = input.value.trim();
 
-  if (!target || !target.startsWith('0x') || target.length < 10) {
+  if (!target || (target !== 'SOURCE' && (!target.startsWith('0x') || target.length < 10))) {
     log('Invalid target address — must start with 0x', 'error');
     return;
   }
@@ -1819,9 +1857,12 @@ async function initiateScan() {
       type:        'scan',
       address:     target,
       chain:       chain.value,
-      targetName:  qTarget?.name  || target.slice(0,10) + '...',
-      notes:       qTarget?.notes || '',
+      targetName:  qTarget?.name        || target.slice(0,10) + '...',
+      notes:       qTarget?.notes       || '',
       attackAngle: qTarget?.attackAngle || '',
+      sourceUrl:   qTarget?.sourceUrl   || null,
+      category:    qTarget?.category    || null,
+      groundTruth: qTarget?.groundTruth || null,
     }));
     return;
   }

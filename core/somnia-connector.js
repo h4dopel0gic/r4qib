@@ -17,6 +17,14 @@ export const CHAINS = {
     explorerUrl: 'https://shannon-explorer.somnia.network',
     explorerApiUrl: 'https://somnia.w3us.site/api',
   },
+  'arbitrum-mainnet': {
+    name: 'Arbitrum One',
+    rpcUrl: 'https://arb1.arbitrum.io/rpc',
+    chainId: 42161,
+    symbol: 'ETH',
+    explorerUrl: 'https://arbiscan.io',
+    explorerApiUrl: 'https://api.arbiscan.io/api',
+  },
   'somnia-mainnet': {
     name: 'Somnia Mainnet',
     rpcUrl: 'https://api.infra.mainnet.somnia.network/',
